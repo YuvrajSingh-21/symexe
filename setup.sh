@@ -28,7 +28,7 @@ if [ ! -d "sym_exec_env" ]; then
 fi
 
 # Activate virtual environment
-source sym_exec_env/activate
+source sym_exec_env/bin/activate
 
 # 3. Upgrade Pip
 echo "[*] Upgrading pip..."
@@ -48,7 +48,7 @@ pip install angr claripy
 
 # Graph structures for CFG
 pip install networkx
-
+pip install matplotlib
 echo "------------------------------------------------"
 echo "  Setup Complete!                               "
 echo "------------------------------------------------"
