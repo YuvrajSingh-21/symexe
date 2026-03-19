@@ -57,26 +57,36 @@ class NativeSymbolicExecutor:
             print("[-] Secret not discovered")
 
     def generate_pictorial_graph(self, project, so_file):
-        """Generates a visual representation of the native function callgraph."""
         print(f"[*] Generating pictorial call graph for: {os.path.basename(so_file)}")
-        
         try:
-            # Fast CFG generation for visualization
             cfg = project.analyses.CFGFast()
-            callgraph = cfg.kb.functions.callgraph
-
-            plt.figure(figsize=(12, 8))
-            plt.title(f"Call Graph: {os.path.basename(so_file)}")
-
-            # Create layout and draw nodes/edges
-            pos = nx.spring_layout(callgraph, k=0.3)
-            nx.draw(callgraph, pos, with_labels=True, 
-                    node_color='skyblue', node_size=1500, 
-                    edge_color='gray', font_size=7, 
+            # Get a copy of the graph to modify it
+            callgraph = cfg.kb.functions.callgraph.copy()
+    
+            # FIX 1: Remove any nodes that are 'None' to prevent comparison errors
+            nodes_to_remove = [n for n in callgraph.nodes if n is None]
+            callgraph.remove_nodes_from(nodes_to_remove)
+    
+            # FIX 2: Limit the graph size for large libraries to prevent crashes
+            if len(callgraph.nodes) > 500:
+                print("[!] Graph too large for full rendering. Subsampling first 500 nodes.")
+                # Only keep the first 500 nodes to ensure the layout completes
+                nodes = list(callgraph.nodes)[:500]
+                callgraph = callgraph.subgraph(nodes)
+    
+            plt.figure(figsize=(15, 10))
+            plt.title(f"Call Graph (Partial): {os.path.basename(so_file)}")
+    
+            # FIX 3: Use a more stable layout and handle None values in edge drawing
+            pos = nx.kamada_kawai_layout(callgraph) 
+            
+            nx.draw(callgraph, pos, with_labels=False, # Labels on 500 nodes are unreadable
+                    node_color='skyblue', node_size=50, 
+                    edge_color='gray', width=0.5, alpha=0.5,
                     arrows=True)
-
+    
             output_name = f"graph_{os.path.basename(so_file)}.png"
-            plt.savefig(output_name)
+            plt.savefig(output_name, dpi=300)
             plt.close()
             print(f"[+] Pictorial graph saved as: {output_name}")
             
